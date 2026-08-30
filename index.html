@@ -3,15 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Thonburi Run : วิ่งฝั่งธนฯ กู้สยาม (AR Game)</title>
+    <title>Thonburi Run : วิ่งฝั่งธนฯ กู้สยาม</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;800&display=swap" rel="stylesheet">
-    
-    <!-- MediaPipe Libraries -->
+    <!-- MediaPipe Hands -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
@@ -50,7 +46,7 @@
             height: 100vh;
             object-fit: cover;
             z-index: 1;
-            opacity: 0.6; /* ปรับเพิ่มเพื่อให้เห็นภาพจากกล้องชัดขึ้น (เดิม 0.3) */
+            opacity: 0.3;
             transform: scaleX(-1); /* Mirror effect */
         }
 
@@ -112,121 +108,118 @@
         }
     </style>
 </head>
-<body class="text-white h-screen w-screen relative">
+<body class="text-white">
 
-	<!-- AR Background -->
-    <video id="video-element" autoplay playsinline muted></video>
-
-    <!-- Hidden Video Element for MediaPipe -->
-    <video class="input_video" autoplay playsinline muted></video>
+    <!-- AR Background -->
+    <video id="video-element" autoplay playsinline></video>
+    
+    <!-- Game Canvas -->
+    <canvas id="game-canvas"></canvas>
 
     <!-- AR Cursor -->
     <div id="ar-cursor"></div>
-	
-    <!-- Virtual AR Cursor -->
-    <div id="virtual-cursor"></div>
 
-    <!-- Hidden Video Element for MediaPipe -->
-    <video class="input_video" autoplay playsinline></video>
-
-    <!-- Main Game Canvas -->
-    <canvas id="gameCanvas" class="absolute top-0 left-0 w-full h-full z-0"></canvas>
-
-    <!-- UI Overlay Layer -->
-    <div id="ui-layer" class="absolute top-0 left-0 w-full h-full z-10 pointer-events-none flex flex-col">
+    <!-- UI Layer -->
+    <div class="ui-layer">
         
-        <!-- Loading Screen (Visible at start while AR loads) -->
-        <div id="screen-loading" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 z-50 pointer-events-auto">
-            <h1 class="text-4xl md:text-6xl font-bold text-yellow-400 mb-6 text-center drop-shadow-lg">
-                Thonburi Run<br><span class="text-2xl md:text-3xl text-white">วิ่งฝั่งธนฯ กู้สยาม</span>
-            </h1>
-            <div class="loader mb-4"></div>
-            <p class="text-xl text-yellow-200">กำลังโหลดระบบกล้อง AR...</p>
-            <p class="text-sm text-gray-400 mt-2">กรุณาอนุญาตการใช้งานกล้อง</p>
-        </div>
+        <!-- Screen: Start Menu -->
+        <div id="screen-start" class="w-full h-full flex flex-col items-center justify-center p-4">
+            <div class="glass-panel p-8 md:p-12 rounded-3xl text-center max-w-lg w-full">
+                <div class="text-6xl mb-4">🏇⚔️</div>
+                <h1 class="text-3xl md:text-4xl font-bold text-yellow-300 mb-2 drop-shadow-md">Thonburi Run</h1>
+                <h2 class="text-xl md:text-2xl font-semibold mb-8 text-white">วิ่งฝั่งธนฯ กู้สยาม</h2>
+                
+                <div class="space-y-4 flex flex-col items-center">
+                    <button id="btn-start" class="interactive btn-hover bg-yellow-500 text-black font-bold py-4 px-12 rounded-full text-xl w-full max-w-xs shadow-[0_0_15px_rgba(234,179,8,0.5)]">
+                        เริ่มเกม
+                    </button>
+                    <button id="btn-tutorial" class="interactive btn-hover bg-blue-500/80 border border-blue-400 text-white font-bold py-3 px-12 rounded-full text-lg w-full max-w-xs">
+                        วิธีเล่น
+                    </button>
+                </div>
 
-        <!-- Main Menu Screen -->
-        <div id="screen-menu" class="absolute inset-0 flex flex-col items-center justify-center hidden pointer-events-auto z-40 bg-black/40 backdrop-blur-sm">
-            <div class="glass p-8 md:p-12 rounded-3xl flex flex-col items-center max-w-lg w-11/12 text-center shadow-2xl">
-                <div class="text-6xl mb-4">🐎🤴⚔️</div>
-                <h1 class="text-4xl md:text-5xl font-extrabold text-yellow-400 mb-2 drop-shadow-md">Thonburi Run</h1>
-                <h2 class="text-xl md:text-2xl font-semibold text-white mb-6">วิ่งฝั่งธนฯ กู้สยาม</h2>
-                <p class="text-sm md:text-base text-gray-200 mb-8 leading-relaxed">
-                    สวมบทบาทสมเด็จพระเจ้าตากสินมหาราช รวบรวมไพร่พลและเสบียง เพื่อกอบกู้เอกราช!
-                </p>
-                <div class="flex flex-col gap-4 w-full">
-                    <button id="btn-start" class="interactive btn-hover bg-gradient-to-r from-yellow-500 to-orange-500 text-white font-bold py-4 px-8 rounded-full text-xl shadow-lg border border-yellow-300 w-full">
-                        เริ่มภารกิจ (Start)
-                    </button>
-                    <button id="btn-tutorial" class="interactive btn-hover glass text-white font-bold py-3 px-8 rounded-full text-lg shadow-lg w-full">
-                        วิธีเล่น (How to Play)
-                    </button>
+                <div class="mt-8 text-sm text-gray-300 bg-black/30 p-3 rounded-xl">
+                    <p>💡 บังคับด้วย <b>มือผ่านกล้อง</b> หรือ <b>หน้าจอสัมผัส</b></p>
                 </div>
             </div>
         </div>
 
-        <!-- Tutorial Screen -->
-        <div id="screen-tutorial" class="absolute inset-0 flex flex-col items-center justify-center hidden pointer-events-auto z-40 bg-black/60 backdrop-blur-md">
-            <div class="glass p-6 md:p-10 rounded-3xl max-w-2xl w-11/12 shadow-2xl">
-                <h2 class="text-3xl font-bold text-yellow-400 mb-6 text-center border-b border-white/20 pb-4">วิธีควบคุมด้วย AR</h2>
+        <!-- Screen: Tutorial -->
+        <div id="screen-tutorial" class="w-full h-full hidden flex-col items-center justify-center p-4">
+            <div class="glass-panel p-6 md:p-8 rounded-3xl w-full max-w-3xl overflow-y-auto max-h-[90vh]">
+                <h2 class="text-2xl md:text-3xl font-bold text-center text-yellow-300 mb-6">วิธีควบคุมเกม (How to Play)</h2>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 text-center">
-                    <div class="bg-white/10 p-4 rounded-xl">
-                        <div class="text-5xl mb-2">🤏</div>
-                        <h3 class="text-xl font-bold text-blue-300">จีบนิ้ว (Pinch)</h3>
-                        <p class="text-sm">ใช้นิ้วโป้งและนิ้วชี้แตะกัน เพื่อ <strong class="text-yellow-300">คลิกปุ่ม</strong></p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                    <!-- AR Control -->
+                    <div class="bg-white/10 p-4 rounded-xl flex flex-col items-center text-center">
+                        <h3 class="text-lg font-bold text-green-300 mb-3">✋ ควบคุมด้วยกล้อง (AR)</h3>
+                        <div class="text-4xl mb-2">☝️</div>
+                        <p class="text-sm">ใช้นิ้วชี้เป็น <b>เคอร์เซอร์</b></p>
+                        <p class="text-sm"><b>จีบนิ้ว (นิ้วชี้แตะนิ้วโป้ง)</b> เพื่อคลิกปุ่ม</p>
+                        
+                        <div class="w-full h-px bg-white/20 my-3"></div>
+                        
+                        <div class="flex gap-4 w-full justify-center">
+                            <div class="flex flex-col items-center w-1/2">
+                                <div class="text-2xl">🖐️ ⬆️</div>
+                                <p class="text-xs mt-1">ยกมือขึ้นสูง<br><span class="text-yellow-300 font-bold">กระโดด</span></p>
+                            </div>
+                            <div class="flex flex-col items-center w-1/2">
+                                <div class="text-2xl">✊ ⬇️</div>
+                                <p class="text-xs mt-1">ลดมือลงต่ำ/กำมือ<br><span class="text-yellow-300 font-bold">หมอบ</span></p>
+                            </div>
+                        </div>
                     </div>
-                    <div class="bg-white/10 p-4 rounded-xl">
-                        <div class="text-5xl mb-2">🖐️⬆️</div>
-                        <h3 class="text-xl font-bold text-green-300">ยกมือขึ้นสูง</h3>
-                        <p class="text-sm">ยกมือขึ้นด้านบน เพื่อ <strong class="text-yellow-300">กระโดด (Jump)</strong></p>
-                    </div>
-                    <div class="bg-white/10 p-4 rounded-xl">
-                        <div class="text-5xl mb-2">🖐️⬇️</div>
-                        <h3 class="text-xl font-bold text-red-300">ลดมือลงต่ำ</h3>
-                        <p class="text-sm">ลดมือลงด้านล่าง เพื่อ <strong class="text-yellow-300">หมอบ (Duck)</strong></p>
-                    </div>
-                    <div class="bg-white/10 p-4 rounded-xl flex flex-col justify-center">
-                        <h3 class="text-lg font-bold text-gray-300">คีย์บอร์ดสำรอง</h3>
-                        <p class="text-sm mt-2">กระโดด: <kbd class="bg-gray-700 px-2 rounded">Space</kbd> / <kbd class="bg-gray-700 px-2 rounded">↑</kbd></p>
-                        <p class="text-sm mt-1">หมอบ: <kbd class="bg-gray-700 px-2 rounded">↓</kbd></p>
+                    
+                    <!-- Touch & Keyboard Control -->
+                    <div class="flex flex-col gap-4">
+                        <div class="bg-white/10 p-4 rounded-xl flex flex-col justify-center h-1/2">
+                            <h3 class="text-lg font-bold text-pink-300">📱 หน้าจอสัมผัส</h3>
+                            <p class="text-sm mt-2">แตะหน้าจอ: <strong class="text-yellow-300">กระโดด (Jump)</strong></p>
+                            <p class="text-sm mt-1">ปัดนิ้วลง: <strong class="text-yellow-300">หมอบ (Duck)</strong></p>
+                        </div>
+                        <div class="bg-white/10 p-4 rounded-xl flex flex-col justify-center h-1/2">
+                            <h3 class="text-lg font-bold text-gray-300">⌨️ คีย์บอร์ดสำรอง</h3>
+                            <p class="text-sm mt-2">กระโดด: <kbd class="bg-gray-700 px-2 rounded">Space</kbd> / <kbd class="bg-gray-700 px-2 rounded">↑</kbd></p>
+                            <p class="text-sm mt-1">หมอบ: <kbd class="bg-gray-700 px-2 rounded">↓</kbd></p>
+                        </div>
                     </div>
                 </div>
                 
                 <button id="btn-close-tutorial" class="interactive btn-hover bg-blue-500 text-white font-bold py-3 px-8 rounded-full text-lg w-full shadow-lg">
-                    เข้าใจแล้ว กลับสู่เมนู
+                    เข้าใจแล้ว
                 </button>
             </div>
         </div>
 
         <!-- In-Game HUD -->
-        <div id="screen-hud" class="w-full flex-1 hidden flex-col justify-between p-4 md:p-6 pointer-events-none z-20">
+        <div id="screen-hud" class="w-full flex-1 hidden flex-col justify-between p-2 md:p-6 pointer-events-none z-20">
             <!-- Top HUD -->
             <div class="flex justify-between items-start">
-                <div class="glass-dark px-4 py-2 rounded-2xl flex flex-col gap-1 min-w-[150px]">
+                <div class="glass-dark px-3 py-2 md:px-4 md:py-2 rounded-2xl flex flex-col gap-1 min-w-[120px] md:min-w-[150px]">
                     <div class="flex items-center gap-2">
-                        <span class="text-2xl">คะแนน:</span>
-                        <span id="hud-score" class="text-2xl font-bold text-yellow-400">0</span>
+                        <span class="text-sm md:text-2xl">คะแนน:</span>
+                        <span id="hud-score" class="text-lg md:text-2xl font-bold text-yellow-400">0</span>
                     </div>
-                    <div class="flex items-center gap-2 text-sm">
+                    <div class="flex items-center gap-2 text-xs md:text-sm">
                         <span>🪙 เงิน:</span>
                         <span id="hud-coins" class="text-yellow-300 font-semibold">0</span>
                     </div>
-                    <div class="w-full bg-gray-700 h-2 rounded-full mt-1 overflow-hidden">
+                    <div class="w-full bg-gray-700 h-1.5 md:h-2 rounded-full mt-1 overflow-hidden">
                         <div id="level-progress" class="bg-green-400 h-full w-0 transition-all duration-300"></div>
                     </div>
                 </div>
 
                 <div class="flex flex-col items-end gap-2">
                     <!-- Health Bar -->
-                    <div class="glass-dark px-4 py-2 rounded-2xl flex items-center gap-2">
-                        <span class="text-sm mr-1">พลังใจ:</span>
-                        <div id="hud-lives" class="flex gap-1 text-red-500 text-xl">
+                    <div class="glass-dark px-2 py-1 md:px-4 md:py-2 rounded-2xl flex items-center gap-1 md:gap-2">
+                        <span class="text-xs md:text-sm mr-1">พลังใจ:</span>
+                        <div id="hud-lives" class="flex gap-0.5 md:gap-1 text-red-500 text-sm md:text-xl">
                             <!-- Hearts injected via JS -->
                         </div>
                     </div>
                     <!-- AR Status -->
-                    <div id="ar-status" class="glass-dark px-3 py-1 rounded-full flex items-center gap-2 text-xs font-semibold">
+                    <div id="ar-status" class="glass-dark px-2 py-1 md:px-3 md:py-1 rounded-full flex items-center gap-2 text-[10px] md:text-xs font-semibold">
                         <span class="w-2 h-2 rounded-full bg-red-500" id="ar-indicator"></span>
                         <span id="ar-text">ไม่พบมือ</span>
                     </div>
@@ -234,66 +227,49 @@
             </div>
             
             <!-- Bottom HUD Controls Info -->
-            <div class="w-full flex justify-center mb-4 opacity-50">
-                 <div class="bg-black/50 px-4 py-2 rounded-full text-xs text-white">
-                     ยกมือ = กระโดด | ลดมือ = หมอบ | (คีย์บอร์ด: ↑, Space, ↓)
+            <div class="w-full flex justify-center mb-2 md:mb-4 opacity-50">
+                 <div class="bg-black/50 px-3 py-1 md:px-4 md:py-2 rounded-full text-[10px] md:text-xs text-white text-center">
+                     แตะจอ/ยกมือ = กระโดด | ปัดลง/ลดมือ = หมอบ
                  </div>
             </div>
         </div>
 
-        <!-- Game Over Screen -->
-        <div id="screen-gameover" class="absolute inset-0 flex flex-col items-center justify-center hidden pointer-events-auto z-40 bg-black/80 backdrop-blur-md">
-            <div class="glass p-8 md:p-12 rounded-3xl flex flex-col items-center max-w-lg w-11/12 text-center shadow-2xl border-red-500/30">
-                <div class="text-6xl mb-4">🏳️</div>
-                <h1 class="text-4xl md:text-5xl font-extrabold text-red-400 mb-2">สิ้นสุดภารกิจ</h1>
+        <!-- Screen: Game Over -->
+        <div id="screen-gameover" class="w-full h-full hidden flex-col items-center justify-center p-4">
+            <div class="glass-panel p-8 md:p-12 rounded-3xl text-center max-w-md w-full border-t-8 border-red-500">
+                <h2 class="text-3xl md:text-4xl font-bold text-red-400 mb-2">สิ้นสุดภารกิจ</h2>
+                <p class="text-gray-300 mb-6">กองทัพต้องการคุณมากกว่านี้!</p>
                 
-                <div class="bg-white/10 rounded-xl p-6 w-full my-6 text-left">
-                    <div class="flex justify-between items-center border-b border-white/10 pb-2 mb-2">
-                        <span class="text-gray-300">คะแนนรวม</span>
-                        <span id="go-score" class="text-2xl font-bold text-yellow-400">0</span>
-                    </div>
-                    <div class="flex justify-between items-center border-b border-white/10 pb-2 mb-2">
-                        <span class="text-gray-300">เงินทุนที่เก็บได้</span>
-                        <span id="go-coins" class="text-xl font-bold text-yellow-300">0 🪙</span>
-                    </div>
-                    <div class="flex justify-between items-center border-b border-white/10 pb-2 mb-2">
-                        <span class="text-gray-300">กำลังพลที่รวบรวม</span>
-                        <span id="go-troops" class="text-xl font-bold text-blue-300">0 💂</span>
+                <div class="bg-black/40 rounded-xl p-6 mb-8 text-left space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-300">คะแนนรวม:</span>
+                        <span id="end-score" class="text-2xl font-bold text-yellow-400">0</span>
                     </div>
                     <div class="flex justify-between items-center">
-                        <span class="text-gray-300">เวลาที่ใช้</span>
-                        <span id="go-time" class="text-lg font-bold text-white">00:00</span>
+                        <span class="text-gray-300">เงินที่เก็บได้:</span>
+                        <span id="end-coins" class="text-xl text-yellow-200">0</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-300">เวลาที่เอาชีวิตรอด:</span>
+                        <span id="end-time" class="text-xl text-blue-300">0 วินาที</span>
                     </div>
                 </div>
-
-                <button id="btn-restart" class="interactive btn-hover bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-4 px-8 rounded-full text-xl shadow-lg border border-green-300 w-full">
-                    เริ่มภารกิจใหม่ (Play Again)
+                
+                <button id="btn-restart" class="interactive btn-hover bg-yellow-500 text-black font-bold py-4 px-12 rounded-full text-xl w-full shadow-[0_0_15px_rgba(234,179,8,0.5)]">
+                    เล่นอีกครั้ง
                 </button>
             </div>
         </div>
     </div>
 
     <script>
-        // --- Utilities & State ---
+        // === UI Management ===
         const UI = {
             screens: {
-                loading: document.getElementById('screen-loading'),
-                menu: document.getElementById('screen-menu'),
+                start: document.getElementById('screen-start'),
                 tutorial: document.getElementById('screen-tutorial'),
                 hud: document.getElementById('screen-hud'),
                 gameover: document.getElementById('screen-gameover')
-            },
-            texts: {
-                score: document.getElementById('hud-score'),
-                coins: document.getElementById('hud-coins'),
-                lives: document.getElementById('hud-lives'),
-                progress: document.getElementById('level-progress'),
-                goScore: document.getElementById('go-score'),
-                goCoins: document.getElementById('go-coins'),
-                goTroops: document.getElementById('go-troops'),
-                goTime: document.getElementById('go-time'),
-                arIndicator: document.getElementById('ar-indicator'),
-                arText: document.getElementById('ar-text')
             },
             buttons: {
                 start: document.getElementById('btn-start'),
@@ -301,23 +277,31 @@
                 closeTutorial: document.getElementById('btn-close-tutorial'),
                 restart: document.getElementById('btn-restart')
             },
-            cursor: document.getElementById('virtual-cursor')
+            hud: {
+                score: document.getElementById('hud-score'),
+                coins: document.getElementById('hud-coins'),
+                lives: document.getElementById('hud-lives'),
+                progress: document.getElementById('level-progress')
+            },
+            end: {
+                score: document.getElementById('end-score'),
+                coins: document.getElementById('end-coins'),
+                time: document.getElementById('end-time')
+            },
+            showScreen(screenName) {
+                Object.values(this.screens).forEach(screen => {
+                    screen.classList.add('hidden');
+                    screen.classList.remove('flex');
+                });
+                this.screens[screenName].classList.remove('hidden');
+                this.screens[screenName].classList.add('flex');
+            },
+            updateLives(lives) {
+                this.hud.lives.innerHTML = '❤️'.repeat(lives) + '🖤'.repeat(5 - lives);
+            }
         };
 
-        function showScreen(screenName) {
-            Object.values(UI.screens).forEach(s => s.classList.add('hidden'));
-            if (UI.screens[screenName]) {
-                UI.screens[screenName].classList.remove('hidden');
-            }
-        }
-
-        function formatTime(seconds) {
-            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-            const s = (seconds % 60).toString().padStart(2, '0');
-            return `${m}:${s}`;
-        }
-
-        // --- AR Controller (MediaPipe) ---
+        // === AR Manager ===
         class ARManager {
             constructor() {
                 this.videoElement = document.getElementById('video-element');
@@ -339,20 +323,9 @@
                 this.initHands();
             }
 
-            async init(onReadyCallback) {
+            async initHands() {
                 try {
-                    // ตรวจสอบความปลอดภัยของโฮสติ้ง (HTTPS)
-                    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                        throw new Error("โปรโตคอลไม่ปลอดภัย (ไม่ใช่ HTTPS) หรือเบราว์เซอร์ไม่รองรับ");
-                    }
-
-                    // บังคับขอสิทธิ์เข้าถึงกล้อง
-                    const stream = await navigator.mediaDevices.getUserMedia({ 
-                        video: { facingMode: "user" } // บังคับใช้กล้องหน้า
-                    });
-                    this.videoElement.srcObject = stream;
-
-                    // Initialize MediaPipe Hands
+                    this.updateStatus('กำลังโหลด AI...', 'bg-yellow-500');
                     this.hands = new Hands({locateFile: (file) => {
                         return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
                     }});
@@ -364,41 +337,10 @@
                         minTrackingConfidence: 0.7
                     });
                     
-                    this.hands.onResults(this.onResults.bind(this));
-                    
-                    // Initialize Camera
-                    this.camera = new Camera(this.videoElement, {
-                        onFrame: async () => {
-                            await this.hands.send({image: this.videoElement});
-                        },
-                        width: 640,
-                        height: 480
-                    });
-                    
-                    await this.camera.start();
-                    console.log("AR Camera Started");
-                    onReadyCallback();
+                    this.hands.onResults((results) => this.onResults(results));
                 } catch (error) {
-                    console.error("Camera permission denied:", error.message);
-                    
-                    // แสดงหน้าจอ Error พร้อมระบุสาเหตุ
-                    const loadingScreen = document.getElementById('screen-loading');
-                    loadingScreen.innerHTML = `
-                        <div class="glass p-8 md:p-12 rounded-3xl flex flex-col items-center text-center shadow-2xl border-red-500 border w-11/12 max-w-lg">
-                            <div class="text-6xl mb-4">⚠️</div>
-                            <h1 class="text-2xl md:text-3xl font-bold text-red-400 mb-4">ไม่สามารถเปิดกล้องได้</h1>
-                            <p class="text-sm md:text-base text-white mb-6 text-left">
-                                <strong>สาเหตุที่เป็นไปได้:</strong><br>
-                                1. คุณยังไม่ได้อนุญาตสิทธิ์กล้อง<br>
-                                2. เบราว์เซอร์บล็อกไว้ (ต้องตั้งค่าใน Settings)<br>
-                                3. ลิงก์ไม่ใช่ HTTPS<br>
-                                <span class="text-gray-400 text-xs mt-2 block">Error: ${error.message}</span>
-                            </p>
-                            <button onclick="location.reload()" class="btn-hover bg-yellow-500 text-black font-bold py-3 px-8 rounded-full text-lg w-full">
-                                ลองใหม่อีกครั้ง
-                            </button>
-                        </div>
-                    `;
+                    console.error("AI Initialization failed:", error);
+                    this.updateStatus('โหลด AI ล้มเหลว', 'bg-red-500');
                 }
             }
 
@@ -531,216 +473,192 @@
             }
         }
 
+        // === Game Entities ===
         class Player {
-            constructor(canvas) {
-                this.cvs = canvas;
-                this.baseSize = 60; // Emoji size
-                this.width = 50;
-                this.height = 60;
-                this.x = 100;
+            constructor(x, groundY) {
+                this.x = x;
+                this.groundY = groundY;
+                this.y = groundY;
+                this.width = 60;
+                this.height = 80;
+                this.duckHeight = 50;
                 
-                this.groundY = this.cvs.height - 120;
-                this.y = this.groundY;
-                
-                this.vy = 0;
-                
-                // ปรับแรงโน้มถ่วงให้น้อยลง (เดิม 1.2 -> เปลี่ยนเป็น 0.6 หรือ 0.7) เพื่อให้ตกลงมาช้าๆ
-                this.gravity = 0.20; 
-                
-                // ปรับแรงกระโดดให้น้อยลงตาม (เดิม -20 -> เปลี่ยนเป็น -14 ถึง -16) ไม่ให้โดดสูงเกินขอบจอ
-                this.jumpStrength = -; 
+                // Physics (ปรับให้โดดลอยนานขึ้น)
+                this.velocityY = 0;
+                this.gravity = 0.2; // ลดแรงโน้มถ่วง (เดิม 0.8)
+                this.jumpStrength = -16; // ลดความแรงให้สัมพันธ์กัน (เดิม -20)
                 
                 this.isJumping = false;
                 this.isDucking = false;
-                
-                this.emoji = "🤴";
-                this.horseEmoji = "🐎";
-                
-                this.invulnerable = 0;
             }
 
-            update(action) {
-                // Handle Input (Action from AR or Keyboard)
-                if (action === 'jump' && !this.isJumping && !this.isDucking) {
-                    this.vy = this.jumpStrength;
+            update(inputs) {
+                // Input handling
+                if (inputs.jump && !this.isJumping && !this.isDucking) {
+                    this.velocityY = this.jumpStrength;
                     this.isJumping = true;
                 }
                 
-                if (action === 'duck' && !this.isJumping) {
+                if (inputs.duck) {
                     this.isDucking = true;
-                    this.height = 30; // Shrink hitbox
+                    if (this.isJumping) {
+                        this.velocityY += 2; // Fast fall
+                    }
                 } else {
                     this.isDucking = false;
-                    this.height = 60;
                 }
 
-                // Physics
-                this.y += this.vy;
-                if (this.y < this.groundY) {
-                    this.vy += this.gravity;
-                    // Fast fall if ducking while in air
-                    if (action === 'duck') this.vy += 1.5; 
-                } else {
+                // Physics update
+                this.velocityY += this.gravity;
+                this.y += this.velocityY;
+
+                // Ground collision
+                if (this.y >= this.groundY) {
                     this.y = this.groundY;
-                    this.vy = 0;
+                    this.velocityY = 0;
                     this.isJumping = false;
                 }
-                
-                if (this.invulnerable > 0) this.invulnerable--;
             }
 
             draw(ctx) {
-                // Blinking effect if invulnerable
-                if (this.invulnerable > 0 && Math.floor(Date.now() / 100) % 2 === 0) {
-                    return; 
-                }
-
-                ctx.font = `${this.isDucking ? 40 : this.baseSize}px Arial`;
-                ctx.textAlign = "center";
-                ctx.textBaseline = "bottom";
+                ctx.save();
+                ctx.translate(this.x, this.y);
                 
-                // Draw shadow
-				ctx.shadowColor = "transparent";
-                ctx.fillStyle = "rgba(0,0,0,0.5)";
-                ctx.beginPath();
-                ctx.ellipse(this.x, this.groundY, this.isDucking?25:20, 5, 0, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Draw Player
-                ctx.fillText(this.emoji, this.x, this.y - (this.isDucking ? 0 : 20));
-                if (!this.isJumping && !this.isDucking) {
-                    // Draw horse if standing/running
-                    ctx.font = `${this.baseSize - 10}px Arial`;
-                    ctx.fillText(this.horseEmoji, this.x + 10, this.y);
-                }
-				
-				// Reset shadow เพื่อไม่ให้กระทบการวาดส่วนอื่น
-                ctx.shadowColor = "transparent";
-                ctx.shadowBlur = 0;
-                ctx.shadowOffsetX = 0;
-                ctx.shadowOffsetY = 0;
+                // Draw Character (Emoji)
+                ctx.font = `${this.isDucking ? this.duckHeight : this.height}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
                 
-                // Debug Hitbox
-                /*
-                ctx.strokeStyle = "red";
-                ctx.strokeRect(this.x - this.width/2, this.y - this.height, this.width, this.height);
-                */
+                // Shadow
+                ctx.shadowColor = 'rgba(0,0,0,0.5)';
+                ctx.shadowBlur = 10;
+                
+                ctx.fillText('🤴', 0, 0); // King Emoji representing the character
+                
+                ctx.restore();
             }
-            
-            getHitbox() {
+
+            getBounds() {
+                const h = this.isDucking ? this.duckHeight : this.height;
                 return {
-                    x: this.x - this.width/2,
-                    y: this.y - this.height,
-                    width: this.width,
-                    height: this.height
+                    x: this.x - this.width/4, // Tighter bounding box
+                    y: this.y - h,
+                    width: this.width/2,
+                    height: h
                 };
             }
         }
 
         class Entity {
-            constructor(canvas, type) {
-                this.cvs = canvas;
-                this.type = type; // 'coin', 'troop', 'obstacle_low', 'obstacle_high'
-                this.x = canvas.width + 50;
-                this.speed = 8;
+            constructor(type, x, groundY) {
+                this.type = type; // 'coin', 'soldier', 'obstacle_low', 'obstacle_high'
+                this.x = x;
+                this.groundY = groundY;
+                this.width = 40;
+                this.height = 40;
+                
                 this.markedForDeletion = false;
-                
-                const groundY = this.cvs.height - 120;
-                
-                if (type === 'coin') {
-                    this.emoji = "🪙";
-                    this.size = 30;
-                    this.y = groundY - 25 - (Math.random() * 15); 
-                    this.width = 30;
-                    this.height = 30;
-                } else if (type === 'troop') {
-                    this.emoji = "💂";
-                    this.size = 40;
-                    this.y = groundY;
-                    this.width = 30;
-                    this.height = 40;
-                } else if (type === 'obstacle_low') {
-                    this.emoji = ["🧱", "🪵", "🪨"][Math.floor(Math.random()*3)];
-                    this.size = 50;
-                    this.y = groundY;
-                    this.width = 40;
-                    this.height = 40;
-                } else if (type === 'obstacle_high') {
-                    this.emoji = "🦅"; // Bird or something high
-                    this.size = 40;
-                    this.y = groundY - 50;
-                    this.width = 30;
-                    this.height = 30;
+
+                switch(type) {
+                    case 'coin':
+                        // ทำให้เหรียญอยู่เตี้ยลงและเรียงกันง่ายขึ้น
+                        this.y = groundY - 25 - (Math.random() * 15);
+                        this.emoji = '🪙';
+                        break;
+                    case 'soldier':
+                        this.y = groundY - 20;
+                        this.emoji = '💂';
+                        break;
+                    case 'obstacle_low':
+                        this.y = groundY;
+                        this.emoji = '🪵'; // Log
+                        break;
+                    case 'obstacle_high':
+                        this.y = groundY - 70;
+                        this.emoji = '💣'; // Bomb hanging or flying
+                        break;
                 }
             }
 
-            update(speedMultiplier) {
-                this.x -= this.speed * speedMultiplier;
-                if (this.x + this.size < 0) {
+            update(speed) {
+                this.x -= speed;
+                if (this.x + this.width < 0) {
                     this.markedForDeletion = true;
                 }
             }
 
             draw(ctx) {
-				if (this.type === 'coin') {
-                    ctx.shadowColor = "rgba(255, 215, 0, 1)"; // แสงสีทอง
-                } else if (this.type === 'troop') {
-                    ctx.shadowColor = "rgba(59, 130, 246, 1)"; // แสงสีน้ำเงิน
-                } else {
-                    ctx.shadowColor = "rgba(239, 68, 68, 1)"; // แสงสีแดงสำหรับสิ่งกีดขวาง
+                ctx.save();
+                ctx.font = '40px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                
+                // Simple floating animation for coins
+                let drawY = this.y;
+                if (this.type === 'coin') {
+                    drawY += Math.sin(Date.now() / 150) * 5;
                 }
-                ctx.shadowBlur = 15;
-                ctx.shadowOffsetX = 0;
-                ctx.shadowOffsetY = 0;
-                ctx.font = `${this.size}px Arial`;
-                ctx.textAlign = "center";
-                ctx.textBaseline = "bottom";
-                ctx.fillText(this.emoji, this.x, this.y);
+                
+                ctx.fillText(this.emoji, this.x, drawY);
+                ctx.restore();
             }
-            
-            getHitbox() {
+
+            getBounds() {
                 return {
-                    x: this.x - this.width/2,
-                    y: this.y - this.height,
-                    width: this.width,
-                    height: this.height
+                    x: this.x - 15,
+                    y: this.y - 35,
+                    width: 30,
+                    height: 35
                 };
             }
         }
 
-        class GameEngine {
-            constructor(canvas, arController) {
-                this.canvas = canvas;
-                this.ctx = canvas.getContext('2d');
-                this.ar = arController;
+        // === Main Game Logic ===
+        class Game {
+            constructor() {
+                this.canvas = document.getElementById('game-canvas');
+                this.ctx = this.canvas.getContext('2d');
                 
-                this.state = 'menu'; // menu, tutorial, playing, gameover
-                this.lastTime = 0;
-                this.timer = 0;
-                
+                this.arManager = new ARManager();
+                this.arManager.startCamera();
+
                 this.resizeCanvas();
                 window.addEventListener('resize', () => this.resizeCanvas());
 
-                // Game Data
-                this.player = null;
-                this.entities = [];
+                this.resetGameState();
+                this.setupInputs();
+                this.setupButtons();
+                
+                // Start drawing loop but don't play yet
+                this.lastTime = 0;
+                requestAnimationFrame((t) => this.loop(t));
+            }
+
+            resetGameState() {
+                this.isPlaying = false;
+                this.isGameOver = false;
+                
                 this.score = 0;
                 this.coins = 0;
-                this.troops = 0;
                 this.lives = 5;
-                this.maxLives = 5;
                 
-                this.gameSpeed = 1;
-                // แยก Timer สำหรับเหรียญและสิ่งกีดขวางออกจากกัน
+                // เริ่มต้นช้าๆ
+                this.baseSpeed = 0.6; 
+                this.gameSpeed = this.baseSpeed;
+                
+                this.entities = [];
+                this.player = new Player(100, this.canvas.height - 120);
+                
                 this.coinSpawnTimer = 0;
                 this.obstacleSpawnTimer = 0;
+                
                 this.timePlayed = 0; // seconds
                 this.frameCounter = 0;
                 
-                // Keyboard fallback state
+                // Inputs state
                 this.keys = { jump: false, duck: false };
-                this.setupKeyboard();
-                this.setupButtons();
+                this.touchStartY = 0;
+                this.isSwiping = false;
             }
 
             resizeCanvas() {
@@ -751,7 +669,8 @@
                 }
             }
 
-            setupKeyboard() {
+            setupInputs() {
+                // Keyboard
                 window.addEventListener('keydown', (e) => {
                     if (e.code === 'Space' || e.code === 'ArrowUp') this.keys.jump = true;
                     if (e.code === 'ArrowDown') this.keys.duck = true;
@@ -760,63 +679,62 @@
                     if (e.code === 'Space' || e.code === 'ArrowUp') this.keys.jump = false;
                     if (e.code === 'ArrowDown') this.keys.duck = false;
                 });
+
+                // Touch (Mobile/Tablet)
+                window.addEventListener('touchstart', (e) => {
+                    if (!e.target.closest('.interactive')) {
+                        e.preventDefault(); 
+                    }
+                    this.touchStartY = e.touches[0].clientY;
+                    this.isSwiping = false;
+                }, { passive: false });
+
+                window.addEventListener('touchmove', (e) => {
+                    if (!e.target.closest('.interactive')) {
+                        e.preventDefault();
+                    }
+                    const currentY = e.touches[0].clientY;
+                    
+                    // Detect Swipe Down
+                    if (currentY - this.touchStartY > 40) {
+                        this.keys.duck = true;
+                        this.isSwiping = true;
+                    }
+                }, { passive: false });
+
+                window.addEventListener('touchend', (e) => {
+                    if (!this.isSwiping) {
+                        // Tap to jump
+                        this.keys.jump = true;
+                        setTimeout(() => this.keys.jump = false, 150);
+                    }
+                    this.keys.duck = false;
+                });
             }
 
             setupButtons() {
                 UI.buttons.start.addEventListener('click', () => this.startGame());
+                UI.buttons.tutorial.addEventListener('click', () => UI.showScreen('tutorial'));
+                UI.buttons.closeTutorial.addEventListener('click', () => UI.showScreen('start'));
                 UI.buttons.restart.addEventListener('click', () => this.startGame());
-                UI.buttons.tutorial.addEventListener('click', () => showScreen('tutorial'));
-                UI.buttons.closeTutorial.addEventListener('click', () => showScreen('menu'));
             }
 
             startGame() {
-                this.player = new Player(this.canvas);
-                this.entities = [];
-                this.score = 0;
-                this.coins = 0;
-                this.troops = 0;
-                this.lives = this.maxLives;
-                
-                // ปรับความเร็วเริ่มต้นให้ช้าลง
-                this.baseSpeed = 0.2; 
-                this.gameSpeed = this.baseSpeed;
-                
-                this.timePlayed = 0;
-                this.frameCounter = 0;
-                this.coinSpawnTimer = 0;
-                this.obstacleSpawnTimer = 0;
-                this.state = 'playing';
-                
-                this.updateHUD();
-                showScreen('hud');
+                this.resetGameState();
+                this.isPlaying = true;
+                UI.showScreen('hud');
+                UI.updateLives(this.lives);
             }
 
-            gameOver() {
-                this.state = 'gameover';
-                showScreen('gameover');
-                UI.texts.goScore.innerText = this.score;
-                UI.texts.goCoins.innerText = `${this.coins} 🪙`;
-                UI.texts.goTroops.innerText = `${this.troops} 💂`;
-                UI.texts.goTime.innerText = formatTime(this.timePlayed);
-            }
-
-            updateHUD() {
-                UI.texts.score.innerText = this.score;
-                UI.texts.coins.innerText = this.coins;
+            endGame() {
+                this.isPlaying = false;
+                this.isGameOver = true;
                 
-                // Update Lives Hearts
-                let heartsHtml = '';
-                for(let i=0; i<this.maxLives; i++) {
-                    heartsHtml += (i < this.lives) ? '❤️' : '🖤';
-                }
-                UI.texts.lives.innerHTML = heartsHtml;
+                UI.end.score.innerText = Math.floor(this.score);
+                UI.end.coins.innerText = this.coins;
+                UI.end.time.innerText = Math.floor(this.timePlayed) + ' วินาที';
                 
-                // Increase speed dynamically (ค่อยๆ เร็วขึ้นตามเวลา)
-                this.gameSpeed = this.baseSpeed + (this.timePlayed * 0.005);
-                
-                // Level Progress visually loops every 1000 score
-                let progressPercent = (this.score % 1000) / 1000 * 100;
-                UI.texts.progress.style.width = `${progressPercent}%`;
+                UI.showScreen('gameover');
             }
 
             checkCollision(rect1, rect2) {
@@ -829,220 +747,151 @@
             }
 
             update(deltaTime) {
-                if (this.state !== 'playing') return;
+                if (!this.isPlaying) return;
 
-                // Time tracking
-                this.frameCounter += deltaTime;
-                if (this.frameCounter > 1000) {
-                    this.timePlayed++;
-                    this.score += 5; // Passive score
-                    this.frameCounter = 0;
-                    this.updateHUD();
-                }
-
-                // Determine Input (Keyboard overrides AR for responsive testing)
-                let currentAction = 'run';
-                if (this.keys.jump) currentAction = 'jump';
-                else if (this.keys.duck) currentAction = 'duck';
-                else if (this.ar.data.handDetected) currentAction = this.ar.data.action;
-
-                this.player.update(currentAction);
-
-                // Spawning Logic 1: สร้างเหรียญเป็นแนวไกด์ไลน์ (เกิดถี่ขึ้น)
-                this.coinSpawnTimer += deltaTime;
-                if (this.coinSpawnTimer > 150 / this.gameSpeed) {
-                    this.coinSpawnTimer = 0;
-                    this.entities.push(new Entity(this.canvas, 'coin'));
-                }
-
-                // Spawning Logic 2: สร้างสิ่งกีดขวางและทหาร (เกิดถี่ขึ้นและจำนวนมากขึ้น)
-                this.obstacleSpawnTimer += deltaTime;
-                if (this.obstacleSpawnTimer > 1200 / this.gameSpeed) {
-                    this.obstacleSpawnTimer = 0;
-                    
-                    // สุ่มประเภทที่จะเกิด (ทหาร 30%, สิ่งกีดขวางต่ำ 40%, สิ่งกีดขวางสูง 30%)
-                    const rand = Math.random();
-                    if (rand < 0.3) {
-                        this.entities.push(new Entity(this.canvas, 'troop'));
-                    } else if (rand < 0.7) {
-                        this.entities.push(new Entity(this.canvas, 'obstacle_low'));
-                    } else {
-                        this.entities.push(new Entity(this.canvas, 'obstacle_high'));
-                    }
-                }
-
-                // Update Entities & Collisions
-                const playerHitbox = this.player.getHitbox();
+                this.timePlayed += deltaTime / 1000;
                 
-                this.entities.forEach(entity => {
-                    entity.update(this.gameSpeed);
-                    
-                    if (!entity.markedForDeletion) {
-                        const entityHitbox = entity.getHitbox();
-                        if (this.checkCollision(playerHitbox, entityHitbox)) {
+                // ค่อยๆ เร่งความเร็วตามเวลาที่เล่น (ยิ่งเล่นนานยิ่งเร็ว)
+                this.gameSpeed = this.baseSpeed + (this.timePlayed * 0.015);
+                this.score += this.gameSpeed * 0.1;
+
+                // Sync AR inputs
+                const currentInputs = {
+                    jump: this.keys.jump || this.arManager.isHandHigh,
+                    duck: this.keys.duck || this.arManager.isHandLow
+                };
+
+                this.player.update(currentInputs);
+
+                // --- Spawner Logic ---
+                this.coinSpawnTimer += deltaTime;
+                this.obstacleSpawnTimer += deltaTime;
+                const canvasW = this.canvas.width;
+
+                // 1. สร้างเหรียญเป็นแนวนำทางต่อเนื่อง
+                if (this.coinSpawnTimer > 350 / this.gameSpeed) {
+                    this.entities.push(new Entity('coin', canvasW + 50, this.player.groundY));
+                    this.coinSpawnTimer = 0;
+                }
+
+                // 2. สุ่มสร้างศัตรู หรือ ทหาร (เว้นระยะห่างมากกว่าเหรียญ)
+                if (this.obstacleSpawnTimer > 1200 / this.gameSpeed) {
+                    const r = Math.random();
+                    if (r < 0.2) {
+                        this.entities.push(new Entity('soldier', canvasW + 100, this.player.groundY));
+                    } else if (r < 0.6) {
+                        this.entities.push(new Entity('obstacle_low', canvasW + 100, this.player.groundY));
+                    } else {
+                        this.entities.push(new Entity('obstacle_high', canvasW + 100, this.player.groundY));
+                    }
+                    // สุ่มเวลาเกิดใหม่เล็กน้อยเพื่อไม่ให้คาดเดาง่ายเกินไป
+                    this.obstacleSpawnTimer = -(Math.random() * 500); 
+                }
+
+                // Update & Collisions
+                const playerBounds = this.player.getBounds();
+
+                for (let i = this.entities.length - 1; i >= 0; i--) {
+                    const ent = this.entities[i];
+                    ent.update(this.gameSpeed * (deltaTime / 2)); // Adjust speed based on frame rate
+
+                    if (ent.markedForDeletion) {
+                        this.entities.splice(i, 1);
+                        continue;
+                    }
+
+                    const entBounds = ent.getBounds();
+
+                    if (this.checkCollision(playerBounds, entBounds)) {
+                        ent.markedForDeletion = true; // hit
+
+                        if (ent.type === 'coin') {
+                            this.coins += 1;
+                            this.score += 10;
+                        } else if (ent.type === 'soldier') {
+                            this.score += 100;
+                            // Visual feedback (can be enhanced)
+                            this.entities.push(this.createFloatingText('+100', ent.x, ent.y, 'green'));
+                        } else if (ent.type.startsWith('obstacle')) {
+                            this.lives -= 1;
+                            UI.updateLives(this.lives);
                             
-                            if (entity.type === 'coin') {
-                                this.score += 10;
-                                this.coins += 1;
-                                entity.markedForDeletion = true;
-                                this.updateHUD();
-                            } else if (entity.type === 'troop') {
-                                this.score += 100;
-                                this.troops += 1;
-                                entity.markedForDeletion = true;
-                                this.updateHUD();
-                            } else if (entity.type.startsWith('obstacle')) {
-                                if (this.player.invulnerable <= 0) {
-                                    this.lives--;
-                                    this.player.invulnerable = 60; // 1 second invincibility
-                                    this.updateHUD();
-                                    
-                                    // Visual flash
-                                    this.ctx.fillStyle = "rgba(255,0,0,0.3)";
-                                    this.ctx.fillRect(0,0,this.canvas.width, this.canvas.height);
-                                    
-                                    if (this.lives <= 0) {
-                                        this.gameOver();
-                                    }
-                                }
+                            // Screen shake effect setup could go here
+                            
+                            if (this.lives <= 0) {
+                                this.endGame();
                             }
                         }
                     }
-                });
+                }
 
-                this.entities = this.entities.filter(e => !e.markedForDeletion);
+                // Update UI
+                UI.hud.score.innerText = Math.floor(this.score);
+                UI.hud.coins.innerText = this.coins;
+                
+                // Progress visual (just loops every 1000 score)
+                const prog = (this.score % 1000) / 10;
+                UI.hud.progress.style.width = `${prog}%`;
             }
 
-            drawCameraBackground() {
-                // Draw camera feed as background (Mirrored)
-                if (this.ar.videoElement.readyState >= 2) {
-                    this.ctx.save();
-                    this.ctx.scale(-1, 1);
-                    this.ctx.drawImage(this.ar.videoElement, -this.canvas.width, 0, this.canvas.width, this.canvas.height);
-                    this.ctx.restore();
-                    
-                    // Add a slight dark tint over video for better game visibility
-                    this.ctx.fillStyle = "rgba(15, 23, 42, 0.4)";
-                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-                } else {
-                    // Fallback background
-                    const grad = this.ctx.createLinearGradient(0,0,0,this.canvas.height);
-                    grad.addColorStop(0, "#1e3a8a"); // Blue-900
-                    grad.addColorStop(1, "#020617"); // Slate-950
-                    this.ctx.fillStyle = grad;
-                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            createFloatingText(text, x, y, color) {
+                // A mock entity just to show text flying up
+                const ent = new Entity('coin', x, y);
+                ent.emoji = '';
+                ent.draw = (ctx) => {
+                    ctx.font = '24px Arial';
+                    ctx.fillStyle = color;
+                    ctx.fillText(text, ent.x, ent.y);
+                    ent.y -= 2;
                 }
-            }
-
-            drawEnvironment() {
-                const groundY = this.canvas.height - 120;
-                
-                // Draw Ground
-                this.ctx.fillStyle = "#3f6212"; // Dark Olive
-                this.ctx.fillRect(0, groundY, this.canvas.width, this.canvas.height - groundY);
-                
-                // Top border of ground
-                this.ctx.fillStyle = "#65a30d"; // Lime
-                this.ctx.fillRect(0, groundY, this.canvas.width, 15);
-                
-                // Scrolling Ground pattern (simple lines)
-                this.ctx.strokeStyle = "#4d7c0f";
-                this.ctx.lineWidth = 4;
-                const offset = (Date.now() * 0.2 * this.gameSpeed) % 60;
-                for (let i = -60; i < this.canvas.width; i += 60) {
-                    this.ctx.beginPath();
-                    this.ctx.moveTo(i - offset, groundY);
-                    this.ctx.lineTo(i - offset - 30, this.canvas.height);
-                    this.ctx.stroke();
-                }
-            }
-
-            drawARSkeleton() {
-                // Draw the skeletal lines of hand for visual feedback
-                if (this.ar.data.landmarks) {
-                    const lms = this.ar.data.landmarks;
-                    const w = this.canvas.width;
-                    const h = this.canvas.height;
-                    
-                    this.ctx.save();
-                    // Connectors definitions (MediaPipe Hands standard)
-                    const HAND_CONNECTIONS = [
-                        [0,1], [1,2], [2,3], [3,4], // Thumb
-                        [0,5], [5,6], [6,7], [7,8], // Index
-                        [5,9], [9,10], [10,11], [11,12], // Middle
-                        [9,13], [13,14], [14,15], [15,16], // Ring
-                        [13,17], [0,17], [17,18], [18,19], [19,20] // Pinky & Base
-                    ];
-
-                    this.ctx.strokeStyle = this.ar.data.isPinching ? "rgba(239, 68, 68, 0.8)" : "rgba(34, 197, 94, 0.8)";
-                    this.ctx.lineWidth = 4;
-                    this.ctx.lineCap = "round";
-
-                    // Draw Connections
-                    HAND_CONNECTIONS.forEach(pair => {
-                        const p1 = lms[pair[0]];
-                        const p2 = lms[pair[1]];
-                        this.ctx.beginPath();
-                        // Remember to mirror X!
-                        this.ctx.moveTo((1 - p1.x) * w, p1.y * h);
-                        this.ctx.lineTo((1 - p2.x) * w, p2.y * h);
-                        this.ctx.stroke();
-                    });
-
-                    // Draw points
-                    this.ctx.fillStyle = "white";
-                    lms.forEach(lm => {
-                        this.ctx.beginPath();
-                        this.ctx.arc((1 - lm.x) * w, lm.y * h, 3, 0, 2*Math.PI);
-                        this.ctx.fill();
-                    });
-                    
-                    this.ctx.restore();
-                }
+                return ent;
             }
 
             draw() {
                 this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+                if (!this.isPlaying && !this.isGameOver) return; // Only draw when playing or on game over screen
+
+                // Draw Environment / Ground
+                const gY = this.canvas.height - 120;
+                this.ctx.fillStyle = '#2d3748';
+                this.ctx.fillRect(0, gY, this.canvas.width, 120);
                 
-                this.drawCameraBackground();
-                this.drawEnvironment();
-                
-                if (this.state === 'playing') {
-                    this.entities.forEach(e => e.draw(this.ctx));
-                    this.player.draw(this.ctx);
+                // Ground line
+                this.ctx.fillStyle = '#ecc94b';
+                this.ctx.fillRect(0, gY, this.canvas.width, 5);
+
+                // Parallax background elements (simple blocks)
+                this.ctx.fillStyle = 'rgba(255,255,255,0.05)';
+                const offset = (this.timePlayed * 20) % 200;
+                for(let i=0; i<10; i++) {
+                    this.ctx.fillRect(i*200 - offset, gY - 100, 100, 100);
                 }
 
-                // Always draw AR skeleton on top if available
-                this.drawARSkeleton();
+                // Draw Entities
+                this.entities.forEach(ent => ent.draw(this.ctx));
+
+                // Draw Player
+                this.player.draw(this.ctx);
             }
 
             loop(timestamp) {
                 const deltaTime = timestamp - this.lastTime;
                 this.lastTime = timestamp;
 
-                this.update(deltaTime);
+                // Cap deltaTime to prevent huge jumps if tab is inactive
+                if (deltaTime < 100) {
+                    this.update(deltaTime);
+                }
                 this.draw();
 
-                requestAnimationFrame(this.loop.bind(this));
+                requestAnimationFrame((t) => this.loop(t));
             }
         }
 
+        // Initialize Game
         window.addEventListener('DOMContentLoaded', () => {
-            const arController = new ARController();
-            const canvas = document.getElementById('gameCanvas');
-            const game = new GameEngine(canvas, arController);
-            
-            // Start AR initialization
-            arController.init(() => {
-                // When camera/AR is ready or failed gracefully
-                showScreen('menu');
-            });
-            
-            // Start Canvas Game Loop
-            requestAnimationFrame((t) => {
-                game.lastTime = t;
-                game.loop(t);
-            });
+            const game = new Game();
         });
 
     </script>
