@@ -114,8 +114,11 @@
 </head>
 <body class="text-white h-screen w-screen relative">
 
-    <!-- AR Background -->
-    <video id="video-element" autoplay playsinline></video>
+	<!-- AR Background -->
+    <video id="video-element" autoplay playsinline muted></video>
+
+    <!-- Hidden Video Element for MediaPipe -->
+    <video class="input_video" autoplay playsinline muted></video>
 
     <!-- AR Cursor -->
     <div id="ar-cursor"></div>
@@ -336,9 +339,20 @@
                 this.initHands();
             }
 
-            async initHands() {
+            async init(onReadyCallback) {
                 try {
-                    this.updateStatus('กำลังโหลด AI...', 'bg-yellow-500');
+                    // ตรวจสอบความปลอดภัยของโฮสติ้ง (HTTPS)
+                    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                        throw new Error("โปรโตคอลไม่ปลอดภัย (ไม่ใช่ HTTPS) หรือเบราว์เซอร์ไม่รองรับ");
+                    }
+
+                    // บังคับขอสิทธิ์เข้าถึงกล้อง
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { facingMode: "user" } // บังคับใช้กล้องหน้า
+                    });
+                    this.videoElement.srcObject = stream;
+
+                    // Initialize MediaPipe Hands
                     this.hands = new Hands({locateFile: (file) => {
                         return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
                     }});
@@ -350,10 +364,41 @@
                         minTrackingConfidence: 0.7
                     });
                     
-                    this.hands.onResults((results) => this.onResults(results));
+                    this.hands.onResults(this.onResults.bind(this));
+                    
+                    // Initialize Camera
+                    this.camera = new Camera(this.videoElement, {
+                        onFrame: async () => {
+                            await this.hands.send({image: this.videoElement});
+                        },
+                        width: 640,
+                        height: 480
+                    });
+                    
+                    await this.camera.start();
+                    console.log("AR Camera Started");
+                    onReadyCallback();
                 } catch (error) {
-                    console.error("AI Initialization failed:", error);
-                    this.updateStatus('โหลด AI ล้มเหลว', 'bg-red-500');
+                    console.error("Camera permission denied:", error.message);
+                    
+                    // แสดงหน้าจอ Error พร้อมระบุสาเหตุ
+                    const loadingScreen = document.getElementById('screen-loading');
+                    loadingScreen.innerHTML = `
+                        <div class="glass p-8 md:p-12 rounded-3xl flex flex-col items-center text-center shadow-2xl border-red-500 border w-11/12 max-w-lg">
+                            <div class="text-6xl mb-4">⚠️</div>
+                            <h1 class="text-2xl md:text-3xl font-bold text-red-400 mb-4">ไม่สามารถเปิดกล้องได้</h1>
+                            <p class="text-sm md:text-base text-white mb-6 text-left">
+                                <strong>สาเหตุที่เป็นไปได้:</strong><br>
+                                1. คุณยังไม่ได้อนุญาตสิทธิ์กล้อง<br>
+                                2. เบราว์เซอร์บล็อกไว้ (ต้องตั้งค่าใน Settings)<br>
+                                3. ลิงก์ไม่ใช่ HTTPS<br>
+                                <span class="text-gray-400 text-xs mt-2 block">Error: ${error.message}</span>
+                            </p>
+                            <button onclick="location.reload()" class="btn-hover bg-yellow-500 text-black font-bold py-3 px-8 rounded-full text-lg w-full">
+                                ลองใหม่อีกครั้ง
+                            </button>
+                        </div>
+                    `;
                 }
             }
 
