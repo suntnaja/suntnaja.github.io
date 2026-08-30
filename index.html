@@ -368,7 +368,7 @@
                     await this.videoElement.play();
                     this.updateStatus('กล้องทำงาน / รอตรวจจับมือ', 'bg-blue-500');
                     
-                    this.camera = new camera_utils.Camera(this.videoElement, {
+					this.camera = new Camera(this.videoElement, {
                         onFrame: async () => {
                             if (this.hands) {
                                 await this.hands.send({image: this.videoElement});
@@ -492,7 +492,7 @@
                 
                 // Physics (ปรับให้โดดลอยนานขึ้น)
                 this.velocityY = 0;
-                this.gravity = 0.5; // ลดแรงโน้มถ่วง (เดิม 0.8)
+                this.gravity = 0.8; // ลดแรงโน้มถ่วง (เดิม 0.8)
                 this.jumpStrength = -14; // ลดความแรงให้สัมพันธ์กัน (เดิม -20)
                 
                 this.isJumping = false;
