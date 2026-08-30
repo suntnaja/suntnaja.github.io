@@ -319,6 +319,9 @@
                 // Poses for gameplay
                 this.isHandHigh = false;
                 this.isHandLow = false;
+				
+				// เพิ่มตัวแปรนี้สำหรับเก็บตำแหน่งมือในเฟรมก่อนหน้า
+                this.lastPalmY = null;
 
                 this.initHands();
             }
@@ -449,20 +452,36 @@
                         }
                     }
 
-                    // Pose Detection for Gameplay
-                    // Check wrist/palm Y position for Jump/Duck
-                    const palmY = landmarks[0].y;
-                    if (palmY < 0.4) {
-                        this.isHandHigh = true;
-                        this.isHandLow = false;
-                    } else if (palmY > 0.8) {
-                        this.isHandHigh = false;
+					// === Pose Detection for Gameplay ===
+                    const wrist = landmarks[0];
+                    
+                    // 1. ตรวจจับการกระโดด (สะบัดมือขึ้นแบบเดิม)
+                    if (this.lastPalmY !== null) {
+                        const deltaY = wrist.y - this.lastPalmY;
+                        if (deltaY < -0.04) { 
+                            this.isHandHigh = true;
+                        } else {
+                            this.isHandHigh = false;
+                        }
+                    }
+                    this.lastPalmY = wrist.y; // บันทึกตำแหน่งข้อมือไว้ใช้ในเฟรมถัดไป
+                    
+                    // 2. ตรวจจับการหมอบ (กำมือ / Fist Detection)
+                    // ฟังก์ชันคำนวณระยะห่างระหว่าง 2 จุด
+                    const getDist = (p1, p2) => Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
+                    
+                    // เช็คว่านิ้วถูกพับลงมาหรือไม่ (ระยะจากปลายนิ้วถึงข้อมือ สั้นกว่าระยะจากโคนนิ้วถึงข้อมือ)
+                    const isIndexFolded = getDist(landmarks[8], wrist) < getDist(landmarks[5], wrist);
+                    const isMiddleFolded = getDist(landmarks[12], wrist) < getDist(landmarks[9], wrist);
+                    const isRingFolded = getDist(landmarks[16], wrist) < getDist(landmarks[13], wrist);
+                    const isPinkyFolded = getDist(landmarks[20], wrist) < getDist(landmarks[17], wrist);
+
+                    // หากนิ้วชี้ กลาง นาง และก้อย พับเข้าหาข้อมือ ให้สถานะเป็นการหมอบ
+                    if (isIndexFolded && isMiddleFolded && isRingFolded && isPinkyFolded) {
                         this.isHandLow = true;
                     } else {
-                        this.isHandHigh = false;
                         this.isHandLow = false;
                     }
-
                 } else {
                     this.updateStatus('ไม่พบมือ', 'bg-red-500');
                     this.cursor.style.display = 'none';
