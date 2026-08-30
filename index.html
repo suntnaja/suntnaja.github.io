@@ -46,7 +46,7 @@
             height: 100vh;
             object-fit: cover;
             z-index: 1;
-            opacity: 0.2;
+            opacity: 1;
             transform: scaleX(-1); /* Mirror effect */
         }
 
@@ -111,7 +111,7 @@
 <body class="text-white">
 
     <!-- AR Background -->
-    <video id="video-element" autoplay playsinline></video>
+	<video id="video-element" autoplay playsinline muted></video>
     
     <!-- Game Canvas -->
     <canvas id="game-canvas"></canvas>
@@ -344,9 +344,15 @@
                 }
             }
 
-            async startCamera() {
+			async startCamera() {
                 try {
                     this.updateStatus('กำลังเปิดกล้อง...', 'bg-yellow-500');
+
+                    // ตรวจสอบความปลอดภัยของ Protocol ก่อนเรียกกล้อง
+                    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                        throw new Error("เบราว์เซอร์ไม่รองรับ หรือ ไม่ได้เปิดเว็บผ่าน HTTPS/Localhost");
+                    }
+
                     const stream = await navigator.mediaDevices.getUserMedia({ 
                         video: { width: 1280, height: 720, facingMode: 'user' } 
                     });
@@ -358,7 +364,8 @@
                         };
                     });
                     
-                    this.videoElement.play();
+                    // เพิ่ม await เพื่อรอให้วิดีโอเล่นอย่างสมบูรณ์ก่อนส่งให้ MediaPipe
+                    await this.videoElement.play();
                     this.updateStatus('กล้องทำงาน / รอตรวจจับมือ', 'bg-blue-500');
                     
                     this.camera = new camera_utils.Camera(this.videoElement, {
@@ -850,11 +857,8 @@
             draw() {
                 this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-                if (!this.isPlaying && !this.isGameOver) return; // Only draw when playing or on game over screenฃ
+                if (!this.isPlaying && !this.isGameOver) return; // Only draw when playing or on game over screen
 				
-				// --- เพิ่มเลเยอร์สีดำโปร่งแสงทับภาพกล้อง เพื่อให้ Object ในเกมเด่นขึ้น ---
-				this.ctx.fillStyle = 'rgba(0, 0, 0, 0.4)'; 
-                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
                 // Draw Environment / Ground
                 const gY = this.canvas.height - 120;
