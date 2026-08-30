@@ -782,7 +782,7 @@
                 this.timePlayed += deltaTime / 1000;
                 
                 // ค่อยๆ เร่งความเร็วตามเวลาที่เล่น (ยิ่งเล่นนานยิ่งเร็ว)
-                this.gameSpeed = this.baseSpeed + (this.timePlayed * 0.015);
+                this.gameSpeed = this.baseSpeed + (this.timePlayed + 0.005);
                 this.score += this.gameSpeed * 0.1;
 
                 // Sync AR inputs
