@@ -458,7 +458,7 @@
                     // 1. ตรวจจับการกระโดด (สะบัดมือขึ้นแบบเดิม)
                     if (this.lastPalmY !== null) {
                         const deltaY = wrist.y - this.lastPalmY;
-                        if (deltaY < -0.04) { 
+                        if (deltaY < -0.03) { 
                             this.isHandHigh = true;
                         } else {
                             this.isHandHigh = false;
@@ -469,6 +469,7 @@
                     // 2. ตรวจจับการหมอบ (กำมือ / Fist Detection)
                     // ฟังก์ชันคำนวณระยะห่างระหว่าง 2 จุด
                     const getDist = (p1, p2) => Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
+					const fistSensitivity = 1.2;
                     
                     // เช็คว่านิ้วถูกพับลงมาหรือไม่ (ระยะจากปลายนิ้วถึงข้อมือ สั้นกว่าระยะจากโคนนิ้วถึงข้อมือ)
                     const isIndexFolded = getDist(landmarks[8], wrist) < getDist(landmarks[5], wrist);
